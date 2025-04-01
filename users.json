@@ -1,0 +1,11 @@
+
+{
+    "Danylo": {
+        "username": "Danylo",
+        "hashed_password": "fakehashedsecret"      
+    },
+    "alice": {
+        "username": "alice",
+        "hashed_password": "fakehashedsecret2"
+    }
+}
