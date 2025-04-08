@@ -2,18 +2,21 @@ from typing import Annotated
 from fastapi import FastAPI, Depends
 from pydantic import BaseModel, Field
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.templating import Jinja2Templates
+from starlette.requests import Request
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
+
 
 import json
 
 SECRET_KEY = "19109197bd5e7c289b92b2b355083ea26c71dee2085ceccc19308a7291b2ea06"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60*24
-
-fake_users_db = {}
+ACCESS_TOKEN_EXPIRE_MINUTES = 60*24*7
 
 app = FastAPI()
+
+templates = Jinja2Templates(directory="templates")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -54,6 +57,7 @@ class Book(BaseModel):
     title: str = Field( title = "назва книги", min_length=2, max_length=150)
     author: str = Field( title = "author", min_length=2, max_length=150)
     pages: int = Field( title = "amount of pages", gt = 10)
+    #picture: str = Field( title = "")
 
 
 def load_data(filename="library.json"):
@@ -78,10 +82,12 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
     assess_token = token_create({"sub": user.username})
     return {"acces_token": user.username, "token_type": "bearer"}
 
+
 @app.get("/")
-def get_all_books():
+def get_all_books(request: Request):
     library = load_data()
-    return library
+    return templates.TemplateResponse("index.html", {"request": request, "library": library})
+
 
 @app.post("/books/new")
 def add_book(book: Book, token: Annotated[str, Depends(oauth2_scheme)]):
@@ -93,6 +99,7 @@ def add_book(book: Book, token: Annotated[str, Depends(oauth2_scheme)]):
     save_data(library)
     return library
 
+
 @app.put("/books/update")
 def update_book(book: Book):
     library = load_data()
@@ -102,6 +109,7 @@ def update_book(book: Book):
         return {"message": "Книгу успішно оновлено!"}
     else:
         return {"message": "Книгу не знайдено!"}
+
 
 @app.delete("/books/delete")
 def delete_book(author: str, title: str):
